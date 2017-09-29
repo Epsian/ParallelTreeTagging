@@ -1,0 +1,88 @@
+
+#######################################################
+# ------------- Written by Jared Joseph ------------- #
+#                                                     #
+#                 Please contact me at                #
+#               Jared.n.joseph@gmail.com              #
+#                                                     #
+#                     Find me on:                     #
+# Website: https://www.jnjoseph.com                   #
+# Github: https://www.github.com/Epsian               #
+# BitBucket: https://www.bitbucket.org/Epsian/        #
+# Twitter: https://www.twitter.com/Epsian             #
+# LinkedIn: https://www.linkedin.com/in/jnjoseph/     #
+#                                                     #
+#######################################################
+
+#### Data Load ####
+library(doParallel)
+library(koRpus)
+
+# Start up a parallel cluster
+parallelCluster <- makeCluster(detectCores() - 1)
+print(parallelCluster)
+registerDoParallel(parallelCluster)
+
+# This is the document containing the vector (or column) of data you want to lemmatize.
+doc = read.csv("Your File Here", header = TRUE, stringsAsFactors = FALSE)
+
+#### Function ####
+
+GSRLemPar = function(text.col, MaxIter = 5, LemmatizerSourceDir = 'C:/TreeTagger/'){
+  
+  # Set the koRpus environment
+  set.kRp.env(TT.cmd = "manual",
+              lang = 'en',
+              preset = 'en',
+              treetagger = 'manual',
+              format = 'obj',
+              TT.tknz = TRUE,
+              encoding = 'UTF-8',
+              TT.options = list(path = LemmatizerSourceDir,
+                                preset = 'en'))
+  
+  # Write a function to do the lemmatization
+  lemmatize = function(txt){
+    tagged.words = treetag(txt,
+                           format = "obj",
+                           treetagger ='manual',
+                           lang = 'en',
+                           TT.options = list(path = paste0(LemmatizerSourceDir),
+                                             preset = 'en'))
+    results = tagged.words@TT.res
+    return(results)
+  }
+  
+  # Code that will send chunks of the provided document to parallelCluster created in the 'Data Load' section
+  lemlist = foreach(i = 1:length(text.col), .packages = "koRpus", .combine = c) %dopar% {
+    niter = 0
+    notfail = 0
+    while(niter < MaxIter && notfail == 0){
+      tryCatch({
+        activedf = lemmatize(text.col[i])
+        activedf$lemma = as.character(activedf$lemma)
+        activedf[which(activedf$lemma == "<unknown>"), "lemma"] = activedf[which(activedf$lemma == "<unknown>"), "token"]
+        coltext = paste(activedf$lemma, collapse = " ")
+        ifelse((length(coltext) > 0), yes = (notfail = 1), no = (notfail = 0))
+        return(coltext)
+      }, error = function(e) {
+        notfail = 0
+        return(cat("SKIPPED ERROR :",conditionMessage(e)))
+      })
+    }
+    
+  }
+  return(lemlist)
+}  
+
+#### lemmatize the Data! ####
+
+lemed = GSRLemPar('Your Character Vector Here')
+
+saveRDS(lemed, "Save Object Here.rda")
+
+#### Clean Up ####
+
+stopImplicitCluster()
+stopCluster(parallelCluster)
+rm(parallelCluster)
