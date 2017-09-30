@@ -19,7 +19,7 @@ library(doParallel)
 library(koRpus)
 
 # Start up a parallel cluster
-parallelCluster <- makeCluster(detectCores() - 1)
+parallelCluster <- makeCluster(detectCores() - 1, outfile = "")
 print(parallelCluster)
 registerDoParallel(parallelCluster)
 
@@ -67,6 +67,7 @@ GSRLemPar = function(text.col, MaxIter = 5, LemmatizerSourceDir = 'C:/TreeTagger
         return(coltext)
       }, error = function(e) {
         notfail = 0
+        niter = niter + 1
         return(cat("SKIPPED ERROR :",conditionMessage(e)))
       })
     }
