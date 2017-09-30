@@ -64,6 +64,7 @@ GSRLemPar = function(text.col, MaxIter = 5, LemmatizerSourceDir = 'C:/TreeTagger
         activedf[which(activedf$lemma == "<unknown>"), "lemma"] = activedf[which(activedf$lemma == "<unknown>"), "token"]
         coltext = paste(activedf$lemma, collapse = " ")
         ifelse((length(coltext) > 0), yes = (notfail = 1), no = (notfail = 0))
+        print(paste("Chunk #", i, " of ", length(text.col), " completed!"))
         return(coltext)
       }, error = function(e) {
         notfail = 0
