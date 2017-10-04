@@ -55,23 +55,16 @@ GSRLemPar = function(text.col, MaxIter = 5, LemmatizerSourceDir = 'C:/TreeTagger
   
   # Code that will send chunks of the provided document to parallelCluster created in the 'Data Load' section
   lemlist = foreach(i = 1:length(text.col), .packages = "koRpus", .combine = c) %dopar% {
-    niter = 0
-    notfail = 0
-    while(niter < MaxIter && notfail == 0){
-      tryCatch({
-        activedf = lemmatize(text.col[i])
-        activedf$lemma = as.character(activedf$lemma)
-        activedf[which(activedf$lemma == "<unknown>"), "lemma"] = activedf[which(activedf$lemma == "<unknown>"), "token"]
-        coltext = paste(activedf$lemma, collapse = " ")
-        print(paste("Chunk #", i, " of ", length(text.col), " completed!"))
-        notfail = 1
-        return(coltext)
-      }, error = function(e) {
-        notfail = 0
-        niter = niter + 1
-        return(cat("SKIPPED ERROR :",conditionMessage(e)))
-      })
-    }
+    tryCatch({
+      activedf = lemmatize(text.col[i])
+      activedf$lemma = as.character(activedf$lemma)
+      activedf[which(activedf$lemma == "<unknown>"), "lemma"] = activedf[which(activedf$lemma == "<unknown>"), "token"]
+      coltext = paste(activedf$lemma, collapse = " ")
+      print(paste("Chunk #", i, " of ", length(text.col), " completed!"))
+      return(coltext)
+    }, error = function(e) {
+      return(print(paste("SKIPPED ERROR:", conditionMessage(e), sep = " ")))
+    })
     
   }
   return(lemlist)
