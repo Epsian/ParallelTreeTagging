@@ -23,6 +23,12 @@ parallelCluster <- makeCluster(detectCores() - 1, outfile = "")
 print(parallelCluster)
 registerDoParallel(parallelCluster)
 
+on.exit({
+  stopImplicitCluster()
+  stopCluster(parallelCluster)
+  rm(parallelCluster)
+})
+
 # This is the document containing the vector (or column) of data you want to lemmatize.
 doc = read.csv("Your File Here", header = TRUE, stringsAsFactors = FALSE)
 
